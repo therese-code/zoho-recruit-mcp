@@ -91,4 +91,3 @@ app.get('/.well-known/mcp', (req, res) => {
 });
 
 app.listen(3000, () => console.log('Zoho Recruit MCP running on port 3000'));
-nano index.js
