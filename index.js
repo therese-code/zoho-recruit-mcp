@@ -8,6 +8,60 @@ const CLIENT_SECRET = process.env.ZOHO_CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.ZOHO_REFRESH_TOKEN;
 let accessToken = null;
 
+// OAuth discovery endpoint
+app.get('/.well-known/oauth-authorization-server', (req, res) => {
+  const base = `https://${req.headers.host}`;
+  res.json({
+    issuer: base,
+    authorization_endpoint: `${base}/oauth/authorize`,
+    token_endpoint: `${base}/oauth/token`,
+    response_types_supported: ['code'],
+    grant_types_supported: ['authorization_code']
+  });
+});
+
+// OAuth authorize — redirect to Zoho
+app.get('/oauth/authorize', (req, res) => {
+  const params = new URLSearchParams({
+    scope: 'ZohoRecruit.modules.ALL',
+    client_id: CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: req.query.redirect_uri || `https://${req.headers.host}/callback`,
+    access_type: 'offline'
+  });
+  res.redirect(`https://accounts.zoho.com/oauth/v2/auth?${params}`);
+});
+
+// OAuth token exchange
+app.post('/oauth/token', async (req, res) => {
+  try {
+    const response = await axios.post(
+      'https://accounts.zoho.com/oauth/v2/token',
+      null,
+      {
+        params: {
+          refresh_token: REFRESH_TOKEN,
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
+          grant_type: 'refresh_token'
+        }
+      }
+    );
+    res.json({
+      access_token: response.data.access_token,
+      token_type: 'Bearer',
+      expires_in: 3600
+    });
+  } catch (err) {
+    res.status(400).json({ error: 'token_error', message: err.message });
+  }
+});
+
+// Callback handler
+app.get('/callback', (req, res) => {
+  res.send('Connected successfully! You can close this window.');
+});
+
 async function getAccessToken() {
   const res = await axios.post('https://accounts.zoho.com/oauth/v2/token', null, {
     params: {
@@ -90,4 +144,4 @@ app.get('/.well-known/mcp', (req, res) => {
   });
 });
 
-app.listen(3000, () => console.log('Zoho Recruit MCP running on port 3000'));
+app.listen(process.env.PORT || 3000, () => console.log('Zoho Recruit MCP running'));
