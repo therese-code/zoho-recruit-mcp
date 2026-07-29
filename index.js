@@ -21,7 +21,6 @@ async function getAccessToken() {
   return res.data.access_token;
 }
 
-// OAuth 2.0 discovery
 app.get('/.well-known/oauth-authorization-server', (req, res) => {
   const base = `https://${req.headers.host}`;
   res.json({
@@ -35,7 +34,6 @@ app.get('/.well-known/oauth-authorization-server', (req, res) => {
   });
 });
 
-// OAuth authorize
 app.get('/oauth/authorize', (req, res) => {
   const { redirect_uri, state } = req.query;
   const params = new URLSearchParams({
@@ -49,7 +47,6 @@ app.get('/oauth/authorize', (req, res) => {
   res.redirect(`https://accounts.zoho.com/oauth/v2/auth?${params.toString()}`);
 });
 
-// OAuth token
 app.post('/oauth/token', async (req, res) => {
   try {
     const { code, redirect_uri, grant_type, refresh_token } = req.body;
@@ -70,11 +67,7 @@ app.post('/oauth/token', async (req, res) => {
         grant_type: 'authorization_code'
       };
     }
-    const response = await axios.post(
-      'https://accounts.zoho.com/oauth/v2/token',
-      null,
-      { params }
-    );
+    const response = await axios.post('https://accounts.zoho.com/oauth/v2/token', null, { params });
     res.json({
       access_token: response.data.access_token,
       refresh_token: response.data.refresh_token || REFRESH_TOKEN,
@@ -86,52 +79,6 @@ app.post('/oauth/token', async (req, res) => {
   }
 });
 
-// Callback
 app.get('/callback', (req, res) => {
-  const { code, state } = req.query;
-  if (req.query.redirect_uri) {
-    return res.redirect(`${req.query.redirect_uri}?code=${code}&state=${state}`);
-  }
   res.send('Connected! You can close this window.');
 });
-
-// MCP manifest
-app.get('/.well-known/mcp.json', (req, res) => {
-  res.json({
-    name: 'zoho-recruit',
-    description: 'Search and retrieve candidates from Zoho Recruit',
-    tools: [
-      {
-        name: 'search_candidates',
-        description: 'Search candidates by skill and minimum years of experience',
-        parameters: {
-          skill: { type: 'string', description: 'Skill to search for e.g. HubSpot' },
-          min_years: { type: 'number', description: 'Minimum years of experience' },
-          max_results: { type: 'number', description: 'Max candidates to return' }
-        }
-      },
-      {
-        name: 'get_candidate',
-        description: 'Get full profile of a specific candidate by ID',
-        parameters: {
-          candidate_id: { type: 'string', description: 'Zoho Recruit candidate ID' }
-        }
-      },
-      {
-        name: 'get_job_postings',
-        description: 'List all open job postings in Zoho Recruit',
-        parameters: {}
-      }
-    ]
-  });
-});
-
-app.get('/.well-known/mcp', (req, res) => {
-  res.redirect('/.well-known/mcp.json');
-});
-
-// Search candidates
-app.post('/search_candidates', async (req, res) => {
-  try {
-    const { skill, min_years, max_results = 20 } = req.body;
-    const token = await getAccessToken();
