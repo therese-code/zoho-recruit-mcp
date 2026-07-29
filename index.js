@@ -81,4 +81,39 @@ app.post('/oauth/token', async (req, res) => {
 
 app.get('/callback', (req, res) => {
   res.send('Connected! You can close this window.');
+});app.get('/.well-known/mcp.json', (req, res) => {
+  res.json({
+    name: 'zoho-recruit',
+    description: 'Search and retrieve candidates from Zoho Recruit',
+    tools: [
+      {
+        name: 'search_candidates',
+        description: 'Search candidates by skill and minimum years of experience',
+        parameters: {
+          skill: { type: 'string', description: 'Skill to search for e.g. HubSpot' },
+          min_years: { type: 'number', description: 'Minimum years of experience' },
+          max_results: { type: 'number', description: 'Max candidates to return' }
+        }
+      },
+      {
+        name: 'get_candidate',
+        description: 'Get full profile of a specific candidate by ID',
+        parameters: {
+          candidate_id: { type: 'string', description: 'Zoho Recruit candidate ID' }
+        }
+      },
+      {
+        name: 'get_job_postings',
+        description: 'List all open job postings in Zoho Recruit',
+        parameters: {}
+      }
+    ]
+  });
 });
+
+app.get('/.well-known/mcp', (req, res) => {
+  res.redirect('/.well-known/mcp.json');
+});
+
+app.post('/search_candidates', async (req, res) => {
+  try {
