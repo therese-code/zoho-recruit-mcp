@@ -39,27 +39,12 @@ async function handleToolCall(name, args) {
   throw new Error('Unknown tool: ' + name);
 }
 
-// OAuth discovery
-app.get('/.well-known/oauth-authorization-server', (req, res) => {
-  const base = 'https://' + req.headers.host;
-  res.json({ issuer: base, authorization_endpoint: base + '/oauth/authorize', token_endpoint: base + '/oauth/token', scopes_supported: ['recruit'], response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token'], code_challenge_methods_supported: ['S256'] });
-});
-
-app.get('/oauth/authorize', (req, res) => {
-  const p = new URLSearchParams({ scope: 'ZohoRecruit.modules.ALL', client_id: CLIENT_ID, response_type: 'code', redirect_uri: req.query.redirect_uri, access_type: 'offline', state: req.query.state || '' });
-  res.redirect('https://accounts.zoho.com/oauth/v2/auth?' + p.toString());
-});
-
-app.post('/oauth/token', async (req, res) => {
-  try {
-    const { code, redirect_uri, grant_type, refresh_token } = req.body;
-    const params = grant_type === 'refresh_token' ? { refresh_token: refresh_token || REFRESH_TOKEN, client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'refresh_token' } : { code, redirect_uri, client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'authorization_code' };
-    const r = await axios.post('https://accounts.zoho.com/oauth/v2/token', null, { params });
-    res.json({ access_token: r.data.access_token, refresh_token: r.data.refresh_token || REFRESH_TOKEN, token_type: 'Bearer', expires_in: 3600 });
-  } catch (err) { res.status(400).json({ error: 'token_error', error_description: err.message }); }
-});
-
-app.get('/callback', (req, res) => { res.send('Connected! You can close this window.'); });
+// Note: no OAuth discovery/authorize/token routes are exposed here.
+// This server authenticates to Zoho internally using the ZOHO_REFRESH_TOKEN
+// env var (see getAccessToken above) on every tool call, so callers do not
+// need to complete an interactive login. Advertising OAuth discovery here
+// previously caused MCP clients to force a browser login that Self Client
+// apps cannot actually complete.
 
 // MCP Streamable HTTP endpoint
 app.post('/mcp', async (req, res) => {
@@ -73,7 +58,7 @@ app.post('/mcp', async (req, res) => {
       { name: 'search_candidates', description: 'Search candidates by skill and experience', inputSchema: { type: 'object', properties: { skill: { type: 'string' }, min_years: { type: 'number' }, max_results: { type: 'number' } }, required: ['skill'] } },
       { name: 'get_candidate', description: 'Get candidate profile by ID', inputSchema: { type: 'object', properties: { candidate_id: { type: 'string' } }, required: ['candidate_id'] } },
       { name: 'get_job_postings', description: 'List open job postings', inputSchema: { type: 'object', properties: {} } }
-    ] } });
+      ] } });
   }
   if (msg.method === 'tools/call') {
     try {
