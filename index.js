@@ -28,14 +28,34 @@ async function getAccessToken() {
 async function handleToolCall(name, args) {
   const token = await getAccessToken();
   if (name === 'search_candidates') {
-    const { skill, min_years, max_results = 20 } = args;
-    const r = await axios.get('https://recruit.zoho.com/recruit/v2/Candidates/search', {
-      headers: { Authorization: 'Zoho-oauthtoken ' + token },
-      params: { criteria: '(Skill_Set:contains:' + skill + ')', per_page: max_results, fields: 'First_Name,Last_Name,Email,Skill_Set,Experience_in_Years,Current_Job_Title,Current_Employer' }
-    });
-    const candidates = (r.data.data || []).filter(c => parseFloat(c.Experience_in_Years) >= (min_years || 0));
-    return { content: [{ type: 'text', text: JSON.stringify(candidates) }] };
+  const { keyword, min_score, min_years, max_results = 20 } = args;
+  const r = await axios.get('https://recruit.zoho.com/recruit/v2/Candidates', {
+    headers: { Authorization: 'Zoho-oauthtoken ' + token },
+    params: {
+      per_page: 200,
+      fields: 'First_Name,Last_Name,Email,VA_Skills_Score,Primary_Niche,Years_in_Secondary_Niche,Years_in_tertiary_Niche,Experience_Details,Candidate_Stage'
+    }
+  });
+  let candidates = r.data.data || [];
+  if (min_score) {
+    candidates = candidates.filter(c => (c.VA_Skills_Score || 0) >= min_score);
   }
+  if (min_years) {
+    candidates = candidates.filter(c => {
+      const years = (c.Years_in_Secondary_Niche || 0) + (c.Years_in_tertiary_Niche || 0);
+      return years >= min_years;
+    });
+  }
+  if (keyword) {
+    const kw = keyword.toLowerCase();
+    candidates = candidates.filter(c => {
+      const experience = c.Experience_Details || [];
+      return experience.some(e => (e.Summary || '').toLowerCase().includes(kw));
+    });
+  }
+  candidates = candidates.slice(0, max_results);
+  return { content: [{ type: 'text', text: JSON.stringify(candidates) }] };
+}
   if (name === 'get_candidate') {
     const r = await axios.get('https://recruit.zoho.com/recruit/v2/Candidates/' + args.candidate_id, { headers: { Authorization: 'Zoho-oauthtoken ' + token } });
     return { content: [{ type: 'text', text: JSON.stringify(r.data.data?.[0] || {}) }] };
