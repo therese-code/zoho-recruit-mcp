@@ -118,20 +118,36 @@ app.delete('/mcp', (req, res) => { res.status(200).end(); });
 let candidatesCache = { data: null, ts: 0 };
 const CACHE_MS = 5 * 60 * 1000;
 
+let candidatesCache = { data: null, ts: 0 };
+const CACHE_MS = 10 * 60 * 1000; // bumped to 10 min since a full pull now takes longer
+
 app.get('/api/candidates', async (req, res) => {
   try {
     if (candidatesCache.data && (Date.now() - candidatesCache.ts) < CACHE_MS) {
       return res.json(candidatesCache.data);
     }
     const token = await getAccessToken();
-    const r = await axios.get('https://recruit.zoho.com/recruit/v2/Candidates', {
-      headers: { Authorization: 'Zoho-oauthtoken ' + token },
-      params: {
-        per_page: 200,
-        fields: 'First_Name,Last_Name,Email,VA_Skills_Score,Years_in_Secondary_Niche,Years_in_tertiary_Niche,Skill_Set,Candidate_Stage'
-      }
-    });
-    const candidates = (r.data.data || []).map(c => ({
+    let allCandidates = [];
+    let page = 1;
+    let moreRecords = true;
+    const MAX_PAGES = 30; // safety cap: 30 x 200 = 6000 candidates max
+
+    while (moreRecords && page <= MAX_PAGES) {
+      const r = await axios.get('https://recruit.zoho.com/recruit/v2/Candidates', {
+        headers: { Authorization: 'Zoho-oauthtoken ' + token },
+        params: {
+          per_page: 200,
+          page: page,
+          fields: 'First_Name,Last_Name,Email,VA_Skills_Score,Years_in_Secondary_Niche,Years_in_tertiary_Niche,Skill_Set,Candidate_Stage'
+        }
+      });
+      const pageData = r.data.data || [];
+      allCandidates = allCandidates.concat(pageData);
+      moreRecords = r.data.info && r.data.info.more_records === true;
+      page++;
+    }
+
+    const candidates = allCandidates.map(c => ({
       id: c.id,
       fn: c.First_Name,
       ln: c.Last_Name,
