@@ -116,9 +116,6 @@ app.get('/mcp', (req, res) => {
 
 app.delete('/mcp', (req, res) => { res.status(200).end(); });
 let candidatesCache = { data: null, ts: 0 };
-const CACHE_MS = 5 * 60 * 1000;
-
-let candidatesCache = { data: null, ts: 0 };
 const CACHE_MS = 10 * 60 * 1000; // bumped to 10 min since a full pull now takes longer
 
 app.get('/api/candidates', async (req, res) => {
