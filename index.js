@@ -27,13 +27,13 @@ async function getAccessToken() {
 
 async function handleToolCall(name, args) {
   const token = await getAccessToken();
-  if (name === 'search_candidates') {
+ if (name === 'search_candidates') {
   const { keyword, min_score, min_years, max_results = 20 } = args;
   const r = await axios.get('https://recruit.zoho.com/recruit/v2/Candidates', {
     headers: { Authorization: 'Zoho-oauthtoken ' + token },
     params: {
       per_page: 200,
-      fields: 'First_Name,Last_Name,Email,VA_Skills_Score,Primary_Niche,Years_in_Secondary_Niche,Years_in_tertiary_Niche,Experience_Details,Candidate_Stage'
+      fields: 'First_Name,Last_Name,Email,VA_Skills_Score,Primary_Niche,Years_in_Secondary_Niche,Years_in_tertiary_Niche,Skill_Set,Candidate_Stage'
     }
   });
   let candidates = r.data.data || [];
@@ -48,10 +48,7 @@ async function handleToolCall(name, args) {
   }
   if (keyword) {
     const kw = keyword.toLowerCase();
-    candidates = candidates.filter(c => {
-      const experience = c.Experience_Details || [];
-      return experience.some(e => (e.Summary || '').toLowerCase().includes(kw));
-    });
+    candidates = candidates.filter(c => (c.Skill_Set || '').toLowerCase().includes(kw));
   }
   candidates = candidates.slice(0, max_results);
   return { content: [{ type: 'text', text: JSON.stringify(candidates) }] };
