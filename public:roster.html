@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VA Candidate Roster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F1ECDD;
+    --paper-raised: #E9E2CE;
+    --ink: #262A1F;
+    --ink-soft: #5C5F4E;
+    --ink-faint: #8A8C79;
+    --rule: #D6CEB4;
+    --rule-strong: #BFB496;
+    --stamp: #2E6B55;
+    --stamp-soft: #E3EDE6;
+    --gold: #A6791F;
+    --gold-soft: #F3E7C9;
+    --brick: #9C4E3B;
+    --brick-soft: #F1DFD7;
+    --mark: #F6DE8C;
+    --focus: #1B3B8F;
+    --font-display: 'Fraunces', serif;
+    --font-ui: 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1B1D16;
+      --paper-raised: #24261D;
+      --ink: #E9E4D2;
+      --ink-soft: #ABA98F;
+      --ink-faint: #75735F;
+      --rule: #383A2C;
+      --rule-strong: #4A4C39;
+      --stamp: #6FBFA0;
+      --stamp-soft: #223129;
+      --gold: #DDB25C;
+      --gold-soft: #332A17;
+      --brick: #D3937E;
+      --brick-soft: #332019;
+      --mark: #6B5A1E;
+      --focus: #8FB2FF;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1B1D16;
+    --paper-raised: #24261D;
+    --ink: #E9E4D2;
+    --ink-soft: #ABA98F;
+    --ink-faint: #75735F;
+    --rule: #383A2C;
+    --rule-strong: #4A4C39;
+    --stamp: #6FBFA0;
+    --stamp-soft: #223129;
+    --gold: #DDB25C;
+    --gold-soft: #332A17;
+    --brick: #D3937E;
+    --brick-soft: #332019;
+    --mark: #6B5A1E;
+    --focus: #8FB2FF;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-ui);
+  }
+  body {
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  header.page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--rule-strong);
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(28px, 4vw, 38px);
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+    line-height: 1.05;
+  }
+  .meta {
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+  }
+  .count-block {
+    text-align: right;
+    font-family: var(--font-mono);
+  }
+  .count-num {
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--stamp);
+  }
+  .count-label {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .field-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin-bottom: 5px;
+    display: block;
+  }
+  .field-group { flex: 1 1 220px; min-width: 200px; }
+  .search-input {
+    width: 100%;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    padding: 10px 12px;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .search-input::placeholder { color: var(--ink-faint); }
+  .search-input:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+
+  .chip-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    padding: 7px 13px;
+    border: 1px solid var(--rule-strong);
+    background: var(--paper-raised);
+    color: var(--ink-soft);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  }
+  .chip:hover { border-color: var(--stamp); }
+  .chip[aria-pressed="true"] {
+    background: var(--stamp);
+    border-color: var(--stamp);
+    color: var(--paper);
+    font-weight: 500;
+  }
+
+  .num-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .num-field input {
+    width: 56px;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    padding: 7px 8px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .weight-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+  }
+  .weight-label {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .weight-formula {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-left: auto;
+  }
+
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .checkbox-field input { accent-color: var(--stamp); }
+
+  .list-head {
+    display: grid;
+    grid-template-columns: 44px 1fr 90px 70px 90px;
+    gap: 12px;
+    padding: 0 14px 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  .list-head span:nth-child(3),
+  .list-head span:nth-child(4),
+  .list-head span:nth-child(5) { text-align: right; }
+
+  ul.roster { list-style: none; margin: 0; padding: 0; }
+
+  li.row {
+    display: grid;
+    grid-template-columns: 44px 1fr 90px 70px 90px;
+    gap: 12px;
+    align-items: start;
+    padding: 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+  li.row.top3 { background: linear-gradient(90deg, var(--gold-soft), transparent 60%); }
+
+  .rank {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+    padding-top: 2px;
+  }
+  .top3 .rank { color: var(--gold); font-weight: 600; }
+
+  .who .name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .who .sub {
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+  .stage-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ink-soft);
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint); flex: none; }
+  .stage-tag.engaged .dot { background: var(--stamp); }
+  .stage-tag.engaged { color: var(--stamp); }
+  .stage-tag.available .dot { background: var(--gold); }
+  .stage-tag.available { color: var(--gold); }
+  .stage-tag.rejected .dot { background: var(--brick); }
+  .stage-tag.rejected { color: var(--brick); }
+  .email { color: var(--ink-faint); font-family: var(--font-mono); font-size: 11px; }
+
+  .skills-line {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .skills-line mark {
+    background: var(--mark);
+    color: var(--ink);
+    border-radius: 2px;
+    padding: 0 2px;
+  }
+  .skills-line.no-skills { color: var(--ink-faint); font-style: italic; }
+
+  .num-col {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    color: var(--ink);
+    padding-top: 2px;
+  }
+  .num-col.muted { color: var(--ink-faint); }
+
+  .combined-col { text-align: right; }
+  .combined-val {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .combined-bar {
+    height: 3px;
+    margin-top: 6px;
+    background: var(--rule);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .combined-bar > i {
+    display: block;
+    height: 100%;
+    background: var(--stamp);
+  }
+
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+  .empty-state .big {
+    font-family: var(--font-display);
+    font-size: 20px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  footer.note {
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+    line-height: 1.6;
+  }
+
+  @media (max-width: 640px) {
+    .list-head { display: none; }
+    li.row {
+      grid-template-columns: 32px 1fr;
+      grid-template-areas:
+        "rank who"
+        "rank stats";
+      row-gap: 8px;
+    }
+    .rank { grid-area: rank; font-size: 18px; }
+    .who { grid-area: who; }
+    .num-col, .combined-col { text-align: left; }
+    .stats-mobile {
+      grid-area: stats;
+      display: flex;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink-soft);
+      flex-wrap: wrap;
+    }
+    .desktop-only { display: none; }
+  }
+  @media (min-width: 641px) {
+    .stats-mobile { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <div>
+      <h1>VA Candidate Roster</h1>
+      <div class="meta" id="metaLine">Snapshot &middot; loading&hellip;</div>
+    </div>
+    <div class="count-block">
+      <div class="count-num" id="countNum">&mdash;</div>
+      <div class="count-label">shown</div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="controls-row">
+      <div class="field-group">
+        <span class="field-label">Name</span>
+        <input class="search-input" id="searchInput" type="text" placeholder="Search by name&hellip;" autocomplete="off" />
+      </div>
+      <div class="field-group">
+        <span class="field-label">Skills</span>
+        <input class="search-input" id="skillInput" type="text" placeholder="e.g. Operations, Bookkeeping, Social Media&hellip;" autocomplete="off" />
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <div class="chip-group" id="stageChips" role="group" aria-label="Filter by stage">
+        <button class="chip" data-stage="All" aria-pressed="true">All</button>
+        <button class="chip" data-stage="Engaged" aria-pressed="false">Engaged</button>
+        <button class="chip" data-stage="Available" aria-pressed="false">Available</button>
+        <button class="chip" data-stage="Rejected" aria-pressed="false">Rejected</button>
+      </div>
+      <div class="num-field">
+        <label for="minScore">Min score</label>
+        <input type="number" id="minScore" min="0" max="100" value="0" />
+      </div>
+      <div class="num-field">
+        <label for="minYears">Min years</label>
+        <input type="number" id="minYears" min="0" max="40" value="0" />
+      </div>
+      <label class="checkbox-field">
+        <input type="checkbox" id="includeUnscored" checked />
+        Include not-yet-assessed
+      </label>
+    </div>
+
+    <div class="weight-row">
+      <span class="weight-label">Rank by</span>
+      <div class="chip-group" id="weightChips" role="group" aria-label="Ranking weight">
+        <button class="chip" data-weight="skill" aria-pressed="false">Skill-weighted</button>
+        <button class="chip" data-weight="balanced" aria-pressed="true">Balanced</button>
+        <button class="chip" data-weight="exp" aria-pressed="false">Experience-weighted</button>
+      </div>
+      <span class="weight-formula" id="formulaNote"></span>
+    </div>
+  </div>
+
+  <div class="list-head desktop-only">
+    <span></span>
+    <span>Candidate</span>
+    <span>Skill score</span>
+    <span>Years</span>
+    <span>Combined</span>
+  </div>
+
+  <ul class="roster" id="rosterList"></ul>
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <div class="big">No one matches these filters</div>
+    <div>Try lowering the score or years threshold, or clearing the search.</div>
+  </div>
+
+  <footer class="note" id="snapshotNote"></footer>
+</div>
+
+<script>
+let CANDIDATES = [];
+
+const YEARS_CAP = 20;
+const WEIGHT_FORMULAS = {
+  skill:    { mult: 1,  label: 'score + min(years,20)&times;1' },
+  balanced: { mult: 2,  label: 'score + min(years,20)&times;2' },
+  exp:      { mult: 4,  label: 'score + min(years,20)&times;4' }
+};
+
+let state = {
+  search: '',
+  skillQuery: '',
+  stage: 'All',
+  minScore: 0,
+  minYears: 0,
+  includeUnscored: true,
+  weight: 'balanced'
+};
+
+function totalYears(c) {
+  return (c.y2 || 0) + (c.y3 || 0);
+}
+
+function combinedScore(c, weightKey) {
+  const skill = c.score == null ? 0 : c.score;
+  const yrs = Math.min(totalYears(c), YEARS_CAP);
+  return skill + yrs * WEIGHT_FORMULAS[weightKey].mult;
+}
+
+function stageClass(stage) {
+  return (stage || '').toLowerCase();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function skillsSnippet(skillsStr, query) {
+  if (!skillsStr) return { html: 'No skills on file', empty: true };
+  const parts = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
+  let shown = parts;
+  if (query) {
+    const q = query.toLowerCase();
+    const matches = parts.filter(p => p.toLowerCase().includes(q));
+    const rest = parts.filter(p => !p.toLowerCase().includes(q));
+    shown = matches.concat(rest).slice(0, 8);
+  } else {
+    shown = parts.slice(0, 6);
+  }
+  const html = shown.map(p => {
+    const esc = escapeHtml(p);
+    if (query && p.toLowerCase().includes(query.toLowerCase())) {
+      const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+      return esc.replace(re, '<mark>$1</mark>');
+    }
+    return esc;
+  }).join(' &middot; ');
+  const more = parts.length > shown.length ? ' &middot; +' + (parts.length - shown.length) + ' more' : '';
+  return { html: html + more, empty: false };
+}
+
+function render() {
+  const q = state.search.trim().toLowerCase();
+  const sq = state.skillQuery.trim().toLowerCase();
+
+  let rows = CANDIDATES.filter(c => {
+    if (!state.includeUnscored && c.score == null) return false;
+    if (state.stage !== 'All' && c.stage !== state.stage) return false;
+    if (state.minScore > 0 && (c.score == null || c.score < state.minScore)) return false;
+    if (state.minYears > 0 && totalYears(c) < state.minYears) return false;
+    if (q) {
+      const full = (c.fn + ' ' + c.ln).toLowerCase();
+      if (!full.includes(q)) return false;
+    }
+    if (sq) {
+      const skills = (c.skills || '').toLowerCase();
+      if (!skills.includes(sq)) return false;
+    }
+    return true;
+  });
+
+  rows.forEach(c => { c._combined = combinedScore(c, state.weight); });
+  rows.sort((a, b) => {
+    if (a.score == null && b.score != null) return 1;
+    if (a.score != null && b.score == null) return -1;
+    return b._combined - a._combined;
+  });
+
+  document.getElementById('countNum').textContent = rows.length;
+
+  const maxCombined = rows.reduce((m, c) => Math.max(m, c._combined), 1);
+  const list = document.getElementById('rosterList');
+  const empty = document.getElementById('emptyState');
+
+  if (rows.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = rows.map((c, i) => {
+    const rank = i + 1;
+    const isTop3 = rank <= 3;
+    const scoreDisp = c.score == null ? '&mdash;' : c.score;
+    const yrs = totalYears(c);
+    const barPct = Math.max(4, Math.round((c._combined / maxCombined) * 100));
+    const sClass = stageClass(c.stage);
+    const sk = skillsSnippet(c.skills, state.skillQuery.trim());
+    return `
+      <li class="row ${isTop3 ? 'top3' : ''}">
+        <div class="rank">${rank}</div>
+        <div class="who">
+          <div class="name">${escapeHtml(c.fn)} ${escapeHtml(c.ln)}</div>
+          <div class="sub">
+            <span class="stage-tag ${sClass}"><span class="dot"></span>${escapeHtml(c.stage || 'Unknown')}</span>
+            <span class="email desktop-only">${escapeHtml(c.email || '')}</span>
+          </div>
+          <div class="skills-line ${sk.empty ? 'no-skills' : ''}">${sk.html}</div>
+          <div class="stats-mobile">
+            <span>Skill ${scoreDisp}</span>
+            <span>${yrs} yrs</span>
+            <span>Combined ${c._combined}</span>
+          </div>
+        </div>
+        <div class="num-col desktop-only ${c.score == null ? 'muted' : ''}">${scoreDisp}</div>
+        <div class="num-col desktop-only">${yrs}</div>
+        <div class="combined-col desktop-only">
+          <div class="combined-val">${c._combined}</div>
+          <div class="combined-bar"><i style="width:${barPct}%"></i></div>
+        </div>
+      </li>
+    `;
+  }).join('');
+}
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  state.search = e.target.value;
+  render();
+});
+document.getElementById('skillInput').addEventListener('input', e => {
+  state.skillQuery = e.target.value;
+  render();
+});
+
+document.getElementById('stageChips').addEventListener('click', e => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  state.stage = btn.dataset.stage;
+  document.querySelectorAll('#stageChips .chip').forEach(c => c.setAttribute('aria-pressed', c === btn));
+  render();
+});
+
+document.getElementById('weightChips').addEventListener('click', e => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  state.weight = btn.dataset.weight;
+  document.querySelectorAll('#weightChips .chip').forEach(c => c.setAttribute('aria-pressed', c === btn));
+  document.getElementById('formulaNote').innerHTML = 'combined = ' + WEIGHT_FORMULAS[state.weight].label;
+  render();
+});
+
+document.getElementById('minScore').addEventListener('input', e => {
+  state.minScore = Number(e.target.value) || 0;
+  render();
+});
+document.getElementById('minYears').addEventListener('input', e => {
+  state.minYears = Number(e.target.value) || 0;
+  render();
+});
+document.getElementById('includeUnscored').addEventListener('change', e => {
+  state.includeUnscored = e.target.checked;
+  render();
+});
+
+async function loadData() {
+  document.getElementById('metaLine').textContent = 'Loading live candidates from Zoho…';
+  try {
+    const res = await fetch('/api/candidates');
+    if (!res.ok) throw new Error('status ' + res.status);
+    CANDIDATES = await res.json();
+  } catch (e) {
+    document.getElementById('metaLine').textContent = 'Could not load live data (' + e.message + '). Try refreshing the page.';
+    return;
+  }
+  document.getElementById('formulaNote').innerHTML = 'combined = ' + WEIGHT_FORMULAS[state.weight].label;
+  document.getElementById('metaLine').textContent =
+    CANDIDATES.length + ' candidates · live from Zoho Recruit · loaded ' + new Date().toLocaleTimeString();
+  document.getElementById('snapshotNote').innerHTML =
+    'This page queries Zoho Recruit live (cached up to 5 minutes server-side) — refresh your browser any time for current data. Only candidates with a completed VA assessment have a skill score; others show as not-yet-assessed. Skills are Zoho\'s own tags on each profile, not verified by Crukus.';
+  render();
+}
+
+loadData();
+</script>
+</body>
+</html>
