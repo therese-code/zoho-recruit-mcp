@@ -161,4 +161,15 @@ app.get('/api/candidates', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+app.get('/api/debug-attachments/:id', async (req, res) => {
+  try {
+    const token = await getAccessToken();
+    const r = await axios.get('https://recruit.zoho.com/recruit/v2/Candidates/' + req.params.id + '/Attachments', {
+      headers: { Authorization: 'Zoho-oauthtoken ' + token }
+    });
+    res.json(r.data);
+  } catch (err) {
+    res.status(500).json({ error: err.message, detail: err.response ? err.response.data : null });
+  }
+});
 app.listen(PORT, () => console.log('Zoho Recruit MCP running on port ' + PORT));
