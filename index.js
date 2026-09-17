@@ -172,4 +172,26 @@ app.get('/api/debug-attachments/:id', async (req, res) => {
     res.status(500).json({ error: err.message, detail: err.response ? err.response.data : null });
   }
 });
+app.get('/api/resume/:id', async (req, res) => {
+  try {
+    const token = await getAccessToken();
+    const listResp = await axios.get('https://recruit.zoho.com/recruit/v2/Candidates/' + req.params.id + '/Attachments', {
+      headers: { Authorization: 'Zoho-oauthtoken ' + token }
+    });
+    const attachments = listResp.data.data || [];
+    const resume = attachments.find(a => a.Category && a.Category.name === 'Resume') || attachments[0];
+    if (!resume) {
+      return res.status(404).send('No resume on file for this candidate.');
+    }
+    const fileResp = await axios.get('https://recruit.zoho.com/recruit/v2/Candidates/' + req.params.id + '/Attachments/' + resume.id, {
+      headers: { Authorization: 'Zoho-oauthtoken ' + token },
+      responseType: 'arraybuffer'
+    });
+    res.setHeader('Content-Type', fileResp.headers['content-type'] || 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="' + resume.File_Name + '"');
+    res.send(fileResp.data);
+  } catch (err) {
+    res.status(500).send('Could not load resume: ' + err.message);
+  }
+});
 app.listen(PORT, () => console.log('Zoho Recruit MCP running on port ' + PORT));
