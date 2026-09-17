@@ -4,7 +4,7 @@ const { randomUUID } = require('crypto');
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(express.static('public'));
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -115,5 +115,37 @@ app.get('/mcp', (req, res) => {
 });
 
 app.delete('/mcp', (req, res) => { res.status(200).end(); });
+let candidatesCache = { data: null, ts: 0 };
+const CACHE_MS = 5 * 60 * 1000;
 
+app.get('/api/candidates', async (req, res) => {
+  try {
+    if (candidatesCache.data && (Date.now() - candidatesCache.ts) < CACHE_MS) {
+      return res.json(candidatesCache.data);
+    }
+    const token = await getAccessToken();
+    const r = await axios.get('https://recruit.zoho.com/recruit/v2/Candidates', {
+      headers: { Authorization: 'Zoho-oauthtoken ' + token },
+      params: {
+        per_page: 200,
+        fields: 'First_Name,Last_Name,Email,VA_Skills_Score,Years_in_Secondary_Niche,Years_in_tertiary_Niche,Skill_Set,Candidate_Stage'
+      }
+    });
+    const candidates = (r.data.data || []).map(c => ({
+      id: c.id,
+      fn: c.First_Name,
+      ln: c.Last_Name,
+      email: c.Email,
+      score: c.VA_Skills_Score,
+      y2: c.Years_in_Secondary_Niche,
+      y3: c.Years_in_tertiary_Niche,
+      stage: c.Candidate_Stage,
+      skills: c.Skill_Set
+    }));
+    candidatesCache = { data: candidates, ts: Date.now() };
+    res.json(candidates);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 app.listen(PORT, () => console.log('Zoho Recruit MCP running on port ' + PORT));
