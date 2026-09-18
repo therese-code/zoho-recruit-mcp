@@ -135,7 +135,7 @@ app.get('/api/candidates', async (req, res) => {
         params: {
           per_page: 200,
           page: page,
-          fields: 'First_Name,Last_Name,Email,VA_Skills_Score,Years_in_Secondary_Niche,Years_in_tertiary_Niche,Skill_Set,Candidate_Stage'
+          fields: 'First_Name,Last_Name,Email,VA_Skills_Score,Years_in_Secondary_Niche,Years_in_tertiary_Niche,Skill_Set,Candidate_Stage,Created_Time'
         }
       });
       const pageData = r.data.data || [];
@@ -153,7 +153,8 @@ app.get('/api/candidates', async (req, res) => {
       y2: c.Years_in_Secondary_Niche,
       y3: c.Years_in_tertiary_Niche,
       stage: c.Candidate_Stage,
-      skills: c.Skill_Set
+      skills: c.Skill_Set,
+      applied: c.Created_Time
     }));
     candidatesCache = { data: candidates, ts: Date.now() };
     res.json(candidates);
