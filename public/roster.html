@@ -297,6 +297,14 @@
   .stage-tag.rejected .dot { background: var(--brick); }
   .stage-tag.rejected { color: var(--brick); }
   .email { color: var(--ink-faint); font-family: var(--font-mono); font-size: 11px; }
+  .resume-link {
+    color: var(--stamp);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    border-bottom: 1px solid transparent;
+  }
+  .resume-link:hover { border-bottom-color: var(--stamp); }
 
   .skills-line {
     margin-top: 6px;
@@ -588,6 +596,7 @@ function render() {
           <div class="sub">
             <span class="stage-tag ${sClass}"><span class="dot"></span>${escapeHtml(c.stage || 'Unknown')}</span>
             <span class="email desktop-only">${escapeHtml(c.email || '')}</span>
+            <a class="resume-link" href="/api/resume/${encodeURIComponent(c.id)}" target="_blank" rel="noopener">View resume</a>
           </div>
           <div class="skills-line ${sk.empty ? 'no-skills' : ''}">${sk.html}</div>
           <div class="stats-mobile">
