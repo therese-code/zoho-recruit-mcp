@@ -235,7 +235,7 @@
 
   .list-head {
     display: grid;
-    grid-template-columns: 44px 1fr 90px 70px 90px;
+    grid-template-columns: 44px 1fr 90px 70px 100px 90px;
     gap: 12px;
     padding: 0 14px 8px;
     font-size: 11px;
@@ -246,13 +246,14 @@
   }
   .list-head span:nth-child(3),
   .list-head span:nth-child(4),
-  .list-head span:nth-child(5) { text-align: right; }
+  .list-head span:nth-child(5),
+  .list-head span:nth-child(6) { text-align: right; }
 
   ul.roster { list-style: none; margin: 0; padding: 0; }
 
   li.row {
     display: grid;
-    grid-template-columns: 44px 1fr 90px 70px 90px;
+    grid-template-columns: 44px 1fr 90px 70px 100px 90px;
     gap: 12px;
     align-items: start;
     padding: 14px;
@@ -328,6 +329,24 @@
     padding-top: 2px;
   }
   .num-col.muted { color: var(--ink-faint); }
+
+  .applied-col {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    padding-top: 2px;
+  }
+  .applied-col.fresh { color: var(--stamp); }
+  .applied-col.recent { color: var(--ink-soft); }
+  .applied-col.aging { color: var(--gold); }
+  .applied-col.stale { color: var(--brick); }
+  .applied-col.unknown { color: var(--ink-faint); font-style: italic; }
+  .applied-sub {
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    margin-top: 2px;
+    font-weight: 400;
+  }
 
   .combined-col { text-align: right; }
   .combined-val {
@@ -448,6 +467,17 @@
       </label>
     </div>
 
+    <div class="controls-row">
+      <span class="weight-label">Applied</span>
+      <div class="chip-group" id="appliedChips" role="group" aria-label="Filter by when applied">
+        <button class="chip" data-applied="any" aria-pressed="true">Any time</button>
+        <button class="chip" data-applied="7" aria-pressed="false">Last 7 days</button>
+        <button class="chip" data-applied="30" aria-pressed="false">Last 30 days</button>
+        <button class="chip" data-applied="90" aria-pressed="false">Last 90 days</button>
+        <button class="chip" data-applied="stale90" aria-pressed="false">Older than 90 days</button>
+      </div>
+    </div>
+
     <div class="weight-row">
       <span class="weight-label">Rank by</span>
       <div class="chip-group" id="weightChips" role="group" aria-label="Ranking weight">
@@ -464,6 +494,7 @@
     <span>Candidate</span>
     <span>Skill score</span>
     <span>Years</span>
+    <span>Applied</span>
     <span>Combined</span>
   </div>
 
@@ -493,11 +524,38 @@ let state = {
   minScore: 0,
   minYears: 0,
   includeUnscored: true,
-  weight: 'balanced'
+  weight: 'balanced',
+  applied: 'any'
 };
 
 function totalYears(c) {
   return (c.y2 || 0) + (c.y3 || 0);
+}
+
+function daysSinceApplied(c) {
+  if (!c.applied) return null;
+  const d = new Date(c.applied).getTime();
+  if (isNaN(d)) return null;
+  return Math.floor((Date.now() - d) / 86400000);
+}
+
+function formatApplied(c) {
+  const days = daysSinceApplied(c);
+  if (days === null || !c.applied) return { text: 'Unknown', sub: '', cls: 'unknown' };
+  const d = new Date(c.applied);
+  const dateText = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  let relText;
+  if (days < 1) relText = 'today';
+  else if (days === 1) relText = 'yesterday';
+  else if (days < 30) relText = days + 'd ago';
+  else if (days < 365) relText = Math.floor(days / 30) + 'mo ago';
+  else relText = Math.floor(days / 365) + 'y ago';
+  let cls;
+  if (days <= 7) cls = 'fresh';
+  else if (days <= 30) cls = 'recent';
+  else if (days <= 90) cls = 'aging';
+  else cls = 'stale';
+  return { text: dateText, sub: relText, cls };
 }
 
 function combinedScore(c, weightKey) {
@@ -663,6 +721,15 @@ function render() {
     if (sq) {
       if (!matchesBooleanQuery(sq, c.skills || '')) return false;
     }
+    if (state.applied !== 'any') {
+      const days = daysSinceApplied(c);
+      if (state.applied === 'stale90') {
+        if (days === null || days <= 90) return false;
+      } else {
+        const threshold = Number(state.applied);
+        if (days === null || days > threshold) return false;
+      }
+    }
     return true;
   });
 
@@ -694,6 +761,7 @@ function render() {
     const barPct = Math.max(4, Math.round((c._combined / maxCombined) * 100));
     const sClass = stageClass(c.stage);
     const sk = skillsSnippet(c.skills, state.skillQuery.trim());
+    const applied = formatApplied(c);
     return `
       <li class="row ${isTop3 ? 'top3' : ''}">
         <div class="rank">${rank}</div>
@@ -708,11 +776,13 @@ function render() {
           <div class="stats-mobile">
             <span>Skill ${scoreDisp}</span>
             <span>${yrs} yrs</span>
+            <span class="${applied.cls}">Applied ${applied.text}${applied.sub ? " (" + applied.sub + ")" : ""}</span>
             <span>Combined ${c._combined}</span>
           </div>
         </div>
         <div class="num-col desktop-only ${c.score == null ? 'muted' : ''}">${scoreDisp}</div>
         <div class="num-col desktop-only">${yrs}</div>
+        <div class="applied-col desktop-only ${applied.cls}">${applied.text}${applied.sub ? "<div class=\"applied-sub\">" + applied.sub + "</div>" : ""}</div>
         <div class="combined-col desktop-only">
           <div class="combined-val">${c._combined}</div>
           <div class="combined-bar"><i style="width:${barPct}%"></i></div>
@@ -736,6 +806,14 @@ document.getElementById('stageChips').addEventListener('click', e => {
   if (!btn) return;
   state.stage = btn.dataset.stage;
   document.querySelectorAll('#stageChips .chip').forEach(c => c.setAttribute('aria-pressed', c === btn));
+  render();
+});
+
+document.getElementById('appliedChips').addEventListener('click', e => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  state.applied = btn.dataset.applied;
+  document.querySelectorAll('#appliedChips .chip').forEach(c => c.setAttribute('aria-pressed', c === btn));
   render();
 });
 
