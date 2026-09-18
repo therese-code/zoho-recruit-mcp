@@ -423,7 +423,7 @@
       </div>
       <div class="field-group">
         <span class="field-label">Skills</span>
-        <input class="search-input" id="skillInput" type="text" placeholder="e.g. Operations, Bookkeeping, Social Media&hellip;" autocomplete="off" />
+        <input class="search-input" id="skillInput" type="text" placeholder='e.g. Operations AND NOT Payroll, or "social media"&hellip;' autocomplete="off" />
       </div>
     </div>
 
@@ -519,25 +519,132 @@ function escapeHtml(str) {
 function skillsSnippet(skillsStr, query) {
   if (!skillsStr) return { html: 'No skills on file', empty: true };
   const parts = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
-  let shown = parts;
+  const isBoolean = /\b(AND|OR|NOT)\b/i.test(query || '') || /[()"]/.test(query || '');
+
+  // Extract the plain search terms/phrases to highlight, regardless of AND/OR/NOT syntax
+  let terms = [];
   if (query) {
-    const q = query.toLowerCase();
-    const matches = parts.filter(p => p.toLowerCase().includes(q));
-    const rest = parts.filter(p => !p.toLowerCase().includes(q));
+    if (isBoolean) {
+      terms = (query.match(/"[^"]+"|[^\s()]+/g) || [])
+        .map(t => t.replace(/"/g, ''))
+        .filter(t => !/^(AND|OR|NOT)$/i.test(t) && t.length > 0);
+    } else {
+      terms = [query];
+    }
+  }
+
+  let shown = parts;
+  if (terms.length) {
+    const matches = parts.filter(p => terms.some(t => p.toLowerCase().includes(t.toLowerCase())));
+    const rest = parts.filter(p => !matches.includes(p));
     shown = matches.concat(rest).slice(0, 8);
   } else {
     shown = parts.slice(0, 6);
   }
+
   const html = shown.map(p => {
-    const esc = escapeHtml(p);
-    if (query && p.toLowerCase().includes(query.toLowerCase())) {
-      const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
-      return esc.replace(re, '<mark>$1</mark>');
+    let esc = escapeHtml(p);
+    if (terms.length) {
+      terms.forEach(t => {
+        if (!t) return;
+        const re = new RegExp('(' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+        esc = esc.replace(re, '<mark>$1</mark>');
+      });
     }
     return esc;
   }).join(' &middot; ');
   const more = parts.length > shown.length ? ' &middot; +' + (parts.length - shown.length) + ' more' : '';
   return { html: html + more, empty: false };
+}
+
+
+// --- Boolean search parser: AND / OR / NOT / "phrases" / (grouping), implicit AND between terms ---
+function tokenizeBool(query) {
+  const tokens = [];
+  let i = 0;
+  const n = query.length;
+  while (i < n) {
+    const ch = query[i];
+    if (/\s/.test(ch)) { i++; continue; }
+    if (ch === '(' || ch === ')') { tokens.push({ type: ch }); i++; continue; }
+    if (ch === '"') {
+      let j = i + 1, buf = '';
+      while (j < n && query[j] !== '"') { buf += query[j]; j++; }
+      tokens.push({ type: 'PHRASE', value: buf.toLowerCase() });
+      i = j + 1;
+      continue;
+    }
+    let j = i, buf = '';
+    while (j < n && !/[\s()"]/.test(query[j])) { buf += query[j]; j++; }
+    const upper = buf.toUpperCase();
+    if (upper === 'AND' || upper === 'OR' || upper === 'NOT') tokens.push({ type: upper });
+    else tokens.push({ type: 'TERM', value: buf.toLowerCase() });
+    i = j;
+  }
+  return tokens;
+}
+
+function parseBool(tokens) {
+  let pos = 0;
+  const peek = () => tokens[pos];
+  const next = () => tokens[pos++];
+  function parseOr() {
+    let node = parseAnd();
+    while (peek() && peek().type === 'OR') { next(); node = { type: 'OR', left: node, right: parseAnd() }; }
+    return node;
+  }
+  function parseAnd() {
+    let node = parseNot();
+    while (peek() && (peek().type === 'AND' || isImplicitAndStart(peek()))) {
+      if (peek().type === 'AND') next();
+      node = { type: 'AND', left: node, right: parseNot() };
+    }
+    return node;
+  }
+  function isImplicitAndStart(tok) {
+    return tok.type === 'TERM' || tok.type === 'PHRASE' || tok.type === 'NOT' || tok.type === '(';
+  }
+  function parseNot() {
+    if (peek() && peek().type === 'NOT') { next(); return { type: 'NOT', operand: parseNot() }; }
+    return parseAtom();
+  }
+  function parseAtom() {
+    const tok = peek();
+    if (!tok) return { type: 'TERM', value: '' };
+    if (tok.type === '(') {
+      next();
+      const node = parseOr();
+      if (peek() && peek().type === ')') next();
+      return node;
+    }
+    if (tok.type === 'TERM' || tok.type === 'PHRASE') { next(); return { type: 'TERM', value: tok.value }; }
+    next();
+    return { type: 'TERM', value: '' };
+  }
+  if (tokens.length === 0) return null;
+  return parseOr();
+}
+
+function evalBool(node, haystack) {
+  if (!node) return true;
+  switch (node.type) {
+    case 'TERM': return node.value === '' ? true : haystack.includes(node.value);
+    case 'AND': return evalBool(node.left, haystack) && evalBool(node.right, haystack);
+    case 'OR': return evalBool(node.left, haystack) || evalBool(node.right, haystack);
+    case 'NOT': return !evalBool(node.operand, haystack);
+    default: return true;
+  }
+}
+
+function matchesBooleanQuery(query, text) {
+  const q = (query || '').trim();
+  if (!q) return true;
+  const haystack = (text || '').toLowerCase();
+  try {
+    return evalBool(parseBool(tokenizeBool(q)), haystack);
+  } catch (e) {
+    return haystack.includes(q.toLowerCase());
+  }
 }
 
 function render() {
@@ -554,8 +661,7 @@ function render() {
       if (!full.includes(q)) return false;
     }
     if (sq) {
-      const skills = (c.skills || '').toLowerCase();
-      if (!skills.includes(sq)) return false;
+      if (!matchesBooleanQuery(sq, c.skills || '')) return false;
     }
     return true;
   });
@@ -669,7 +775,7 @@ async function loadData() {
   document.getElementById('metaLine').textContent =
     CANDIDATES.length + ' candidates · live from Zoho Recruit · loaded ' + new Date().toLocaleTimeString();
   document.getElementById('snapshotNote').innerHTML =
-    'This page queries Zoho Recruit live (cached up to 5 minutes server-side) — refresh your browser any time for current data. Only candidates with a completed VA assessment have a skill score; others show as not-yet-assessed. Skills are Zoho\'s own tags on each profile, not verified by Crukus.';
+    'This page queries Zoho Recruit live (cached up to 10 minutes server-side) — refresh your browser any time for current data. Only candidates with a completed VA assessment have a skill score; others show as not-yet-assessed. Skills are Zoho\'s own tags on each profile, not verified by Crukus. Skills search supports AND / OR / NOT, quoted "exact phrases", and (parentheses) — e.g. Operations AND (Bookkeeping OR Payroll) NOT Marketing.';
   render();
 }
 
