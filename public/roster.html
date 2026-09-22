@@ -771,6 +771,7 @@ function render() {
             <span class="stage-tag ${sClass}"><span class="dot"></span>${escapeHtml(c.stage || 'Unknown')}</span>
             <span class="email desktop-only">${escapeHtml(c.email || '')}</span>
             <a class="resume-link" href="/api/resume/${encodeURIComponent(c.id)}" target="_blank" rel="noopener">View resume</a>
+            ${c.email ? '<a class="resume-link" href="mailto:' + escapeHtml(c.email) + '?cc=hr@crukus.com&subject=' + encodeURIComponent('Regarding your VA Application - Crukus Virtual Staffing') + '">Email candidate</a>' : ''}
           </div>
           <div class="skills-line ${sk.empty ? 'no-skills' : ''}">${sk.html}</div>
           <div class="stats-mobile">
